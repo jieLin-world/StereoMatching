@@ -5,8 +5,7 @@ from __future__ import print_function
 from torch.utils.data import Dataset
 import os
 
-from utils import utils
-from utils.file_io import read_img, read_disp
+import data.data_function as f
 
 
 class StereoDataset(Dataset):
@@ -25,97 +24,64 @@ class StereoDataset(Dataset):
         self.transform = transform
 
         sceneflow_finalpass_dict = {
-            'train': 'filenames/SceneFlow_finalpass_train.txt',
-            'val': 'filenames/SceneFlow_finalpass_val.txt',
-            'test': 'filenames/SceneFlow_finalpass_test.txt'
+            'train': 'filenames/SceneFlow_train.txt',
+            'test': 'filenames/SceneFlow_test.txt'
         }
 
         kitti_2012_dict = {
-            'train': 'filenames/KITTI_2012_train.txt',
-            'train_all': 'filenames/KITTI_2012_train_all.txt',
-            'val': 'filenames/KITTI_2012_val.txt',
-            'test': 'filenames/KITTI_2012_test.txt'
+            'train': 'filenames/kitti12_train.txt',
+            'val': 'filenames/kitti12_val.txt',
+            'test': 'filenames/kitti12_test.txt'
         }
 
         kitti_2015_dict = {
-            'train': 'filenames/KITTI_2015_train.txt',
-            'train_all': 'filenames/KITTI_2015_train_all.txt',
-            'val': 'filenames/KITTI_2015_val.txt',
-            'test': 'filenames/KITTI_2015_test.txt'
-        }
-
-        kitti_mix_dict = {
-            'train': 'filenames/KITTI_mix.txt',
-            'test': 'filenames/KITTI_2015_test.txt'
+            'train': 'filenames/kitti15_train.txt',
+            'val': 'filenames/kitti15_val.txt',
+            'test': 'filenames/kitti15_test.txt'
         }
 
         dataset_name_dict = {
             'SceneFlow': sceneflow_finalpass_dict,
             'KITTI2012': kitti_2012_dict,
             'KITTI2015': kitti_2015_dict,
-            'KITTI_mix': kitti_mix_dict,
         }
 
-        assert dataset_name in dataset_name_dict.keys()#断言语句----.key()字典的键
+        assert dataset_name in dataset_name_dict.keys()
         self.dataset_name = dataset_name
-
         self.samples = []
-
-        data_filenames = dataset_name_dict[dataset_name][mode]#dictionary[][]查询字典特定的键和值
-
-        lines = utils.read_text_lines(data_filenames)#自己写的readlines函数
-
+        
+        data_filenames = dataset_name_dict[dataset_name][mode]
+        #data_filenames = kitti15_train.txt
+        
+        lines = f.read_text_lines(data_filenames)
+        #lines = ['a.png','a.png','c.png'...]
+        
         for line in lines:
-            splits = line.split()#对字符串切片
-
-            left_img, right_img = splits[:2]
-            gt_disp = None if len(splits) == 2 else splits[2]
-
-            sample = dict()
-
-            if self.save_filename:
-                sample['left_name'] = left_img.split('/', 1)[1]
-
-            sample['left'] = os.path.join(data_dir, left_img)
-            sample['right'] = os.path.join(data_dir, right_img)
-            sample['disp'] = os.path.join(data_dir, gt_disp) if gt_disp is not None else None
-
-            if load_pseudo_gt and sample['disp'] is not None:
-                # KITTI 2015
-                if 'disp_occ_0' in sample['disp']:
-                    sample['pseudo_disp'] = (sample['disp']).replace('disp_occ_0',
-                                                                     'disp_occ_0_pseudo_gt')
-                # KITTI 2012
-                elif 'disp_occ' in sample['disp']:
-                    sample['pseudo_disp'] = (sample['disp']).replace('disp_occ',
-                                                                     'disp_occ_pseudo_gt')
-                else:
-                    raise NotImplementedError
-            else:
-                sample['pseudo_disp'] = None
-
-            self.samples.append(sample)#向列表samples[]末尾添加元素sample{}，samples[]是左图右图视差图的路径的列表
-
-    def __getitem__(self, index):
-        sample = {}
-        sample_path = self.samples[index]
-
-        if self.save_filename:
-            sample['left_name'] = sample_path['left_name']
-
-        sample['left'] = read_img(sample_path['left'])  # [H, W, 3]
-        sample['right'] = read_img(sample_path['right'])
-
-        # GT disparity of subset if negative, finalpass and cleanpass is positive
-        subset = True if 'subset' in self.dataset_name else False
-        if sample_path['disp'] is not None:
-            sample['disp'] = read_disp(sample_path['disp'], subset=subset)  # [H, W]
-        if sample_path['pseudo_disp'] is not None:
-            sample['pseudo_disp'] = read_disp(sample_path['pseudo_disp'], subset=subset)  # [H, W]
-
-        if self.transform is not None:
-            sample = self.transform(sample)
-
+            splits = line.split()
+            #splits = ['a.png','a.png','c.png']
+            
+            left_img, right_img, gt_disp = f.load_left_right_gtdisp_path(splits)
+            #left_img = training/image_2/000199_10.png
+            
+            sample = f.getpathlist(
+                self.save_filename, 
+                self.data_dir,
+                left_img,
+                right_img,
+                gt_disp,
+                load_pseudo_gt)
+            
+            self.samples.append(sample)
+        #sample = [{'left_name':'','left':'',...},{...}...]
+        
+    def __getitem__(self, index):     
+        sample = f.path_to_array(   self.save_filename,
+                                    self.samples,
+                                    index,
+                                    self.dataset_name)
+        
+        ##########################################################################################
+        sample = self.transform(sample)    
         return sample
 
     def __len__(self):

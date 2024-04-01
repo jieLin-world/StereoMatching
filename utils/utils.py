@@ -12,7 +12,6 @@ def read_text_lines(filepath):
     lines = [l.rstrip() for l in lines]#删除尾随字符
     return lines
 
-
 def check_path(path):
     if not os.path.exists(path):
         os.makedirs(path, exist_ok=True)  # explicitly set exist_ok when multi-processing
