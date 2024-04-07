@@ -1,6 +1,6 @@
 from torch.utils.data import Dataset
 
-from . import stereo_trans as ST
+from . import transform as ST
 
 
 class StereoDataset(Dataset):
@@ -15,11 +15,12 @@ class StereoDataset(Dataset):
         :param data_cfg: A dictionary containing the dataset configuration.
         :param scope: A string indicating the scope of the dataset, one of 'train', 'val', or 'test'.
         """
+        super(StereoDataset, self).__init__()
         # Store the dataset configuration, scope, and training status
         self.data_cfg = data_cfg
         self.is_train = scope == 'train'
         self.scope = scope.lower()
-
+        
         # Initialize the dataset and transform
         self.dataset = None
         self.transform = None

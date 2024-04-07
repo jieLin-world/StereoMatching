@@ -79,8 +79,6 @@ class StereoDataset(Dataset):
                                     self.samples,
                                     index,
                                     self.dataset_name)
-        
-        ##########################################################################################
         sample = self.transform(sample)    
         return sample
 
