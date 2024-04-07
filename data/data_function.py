@@ -7,16 +7,12 @@ import logging
 from utils.file_io import read_img, read_disp
 
 
-def filelines_split(line):
-    splits = line.split()
-    return splits
-
 def load_left_right_gtdisp_path(splits):
     left_img, right_img = splits[:2]
     gt_disp = None if len(splits) == 2 else splits[2]
     return left_img, right_img, gt_disp
 
-def build_sample(save_filename, data_dir, left_img, right_img, gt_disp, load_pseudo_gt):
+def getpathlist(save_filename, data_dir, left_img, right_img, gt_disp, load_pseudo_gt):
     sample = dict()
     if save_filename:
         sample['left_name'] = left_img.split('/', 1)[1]
