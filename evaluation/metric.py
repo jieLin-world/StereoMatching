@@ -119,7 +119,7 @@ def bad_metric_per_image(disp_est, disp_gt, mask, threshold):
     err_mask = err_mask & mask
 
     # Calculate the number of errors and the number of valid pixels for each image
-    num_errors = err_mask.sum(dim=[1, 2])
+    num_errors = err_mask.sum(dim=[1, 2])#The errors in each dimension are summed
     num_valid_pixels = mask.sum(dim=[1, 2])
 
     # Calculate the percentage of errors for each image
