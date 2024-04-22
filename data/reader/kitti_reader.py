@@ -47,7 +47,7 @@ class KittiTestReader(KittiReader):
 
 
 if __name__ == '__main__':
-    dataset = KittiReader(root='../../data/kitti12', list_file='../../../datasets/KITTI12/kitti12_train165.txt')
+    dataset = KittiReader(root='/mnt/cephfs/dataset/stereo_matching/kitti2015', list_file='./My_Net/filenames/KITTI15/kitti15_train200.txt')
     print(dataset)
     sample = dataset[0]
     print(sample['left'].shape, sample['right'].shape, sample['disp'].shape)
