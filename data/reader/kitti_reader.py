@@ -46,7 +46,7 @@ class KittiTestReader(KittiReader):
 
 
 if __name__ == '__main__':
-    dataset = KittiReader(root='/mnt/cephfs/dataset/stereo_matching/kitti2015', list_file='/mnt/cephfs/home/zhihongyan/linjie/sm/filenames/KITTI15/kitti15_train200.txt')
+    dataset = KittiReader(root='/mnt/cephfs/dataset/stereo_matching/kitti2015', list_file='/mnt/cephfs/home/zhihongyan/linjie/stereo/filenames/KITTI15/kitti15_train200.txt')
     print(dataset)
     sample = dataset[0]
     print(sample['left'].shape, sample['right'].shape, sample['disp'].shape)
@@ -61,7 +61,8 @@ disp_img = dataset.disp_loader(disp_img_path) / 256.0
 sample = {
             'left': left_img,
             'right': right_img,
-            'disp': disp_img,}
+            'disp': disp_img,
+        }
 print(dataset.data_list[0])
 print(full_paths)
 print(left_img_path)

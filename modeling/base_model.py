@@ -15,7 +15,8 @@ import torch
 from torch import nn
 
 from base_trainer import BaseTrainer
-from utils import get_msg_mgr, is_dict, get_attr_from, is_list, get_valid_args
+from utils.msg_manager import get_msg_mgr,  is_list
+from utils.common import is_dict, get_attr_from, get_valid_args
 from . import backbone as backbones
 from . import cost_processor as cost_processors
 from . import disp_processor as disp_processors

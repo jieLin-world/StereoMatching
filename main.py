@@ -12,12 +12,12 @@ from utils.common import DDPPassthrough, params_count
 
 def arg_parse():
     parser = argparse.ArgumentParser(description='Main program for OpenStereo.')
-    parser.add_argument('--config', type=str, default='configs/psmnet/PSMNet_sceneflow.yaml',
+    parser.add_argument('--config', type=str, default='/mnt/cephfs/home/zhihongyan/linjie/stereo/configs/gwcnet/GwcNet_kitti.yaml',
                         help="path of config file")
     parser.add_argument('--scope', default='train', choices=['train', 'val', 'test_kitti'],
                         help="choose train or test scope")
     parser.add_argument('--master_addr', type=str, default='localhost', help="master address")
-    parser.add_argument('--master_port', type=str, default='12355', help="master port")
+    parser.add_argument('--master_port', type=str, default='22', help="master port")
     parser.add_argument('--no_distribute', action='store_true', default=False, help="disable distributed training")
     parser.add_argument('--log_to_file', action='store_true',
                         help="log to file, default path is: output/<dataset>/<model>/<save_name>/<logs>/<Datetime>.txt")

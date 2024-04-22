@@ -13,7 +13,7 @@ from tqdm import tqdm
 from data.stereo_dataset_batch import StereoBatchDataset
 from evaluation.evaluator import OpenStereoEvaluator
 from modeling.common import ClipGrad, fix_bn
-from utils import NoOp, get_attr_from, get_valid_args, mkdir
+from utils.common import NoOp, get_attr_from, get_valid_args, mkdir
 from utils.common import convert_state_dict
 from utils.warmup import LinearWarmup
 

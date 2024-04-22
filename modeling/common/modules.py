@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
-from utils import clones, is_list_or_tuple
+from utils.common import clones, is_list_or_tuple
 from torchvision.ops import RoIAlign
 from torch.autograd import Variable
 #from correlation_package.modules.corr import Correlation1d # from PWC-Net
