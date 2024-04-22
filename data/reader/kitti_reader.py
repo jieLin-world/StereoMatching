@@ -1,7 +1,6 @@
 import os
 
-from .base_reader import BaseReader
-
+from data.reader.base_reader import BaseReader
 
 class KittiReader(BaseReader):
     def __init__(self, root, list_file, image_reader='PIL', disp_reader='PIL', right_disp=False, use_noc=False):
@@ -47,7 +46,29 @@ class KittiTestReader(KittiReader):
 
 
 if __name__ == '__main__':
-    dataset = KittiReader(root='/mnt/cephfs/dataset/stereo_matching/kitti2015', list_file='./My_Net/filenames/KITTI15/kitti15_train200.txt')
+    dataset = KittiReader(root='/mnt/cephfs/dataset/stereo_matching/kitti2015', list_file='/mnt/cephfs/home/zhihongyan/linjie/sm/filenames/KITTI15/kitti15_train200.txt')
     print(dataset)
     sample = dataset[0]
     print(sample['left'].shape, sample['right'].shape, sample['disp'].shape)
+
+
+#text:data_list, full_paths, left_img_path, left_img, sample
+""" full_paths = [os.path.join(dataset.root, x) for x in dataset.data_list[0]]
+left_img_path, right_img_path, disp_img_path = full_paths
+left_img = dataset.image_loader(left_img_path)
+right_img = dataset.image_loader(right_img_path)
+disp_img = dataset.disp_loader(disp_img_path) / 256.0
+sample = {
+            'left': left_img,
+            'right': right_img,
+            'disp': disp_img,}
+print(dataset.data_list[0])
+print(full_paths)
+print(left_img_path)
+print(right_img_path)
+print(disp_img_path)
+print(left_img)
+print(right_img)
+print(disp_img)
+print(sample)
+ """

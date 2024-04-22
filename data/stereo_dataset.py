@@ -83,3 +83,7 @@ class StereoDataset(Dataset):
 
     def __len__(self):
         return len(self.dataset)
+
+
+#text
+""" stereodataset = StereoDataset() """
