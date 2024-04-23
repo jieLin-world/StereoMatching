@@ -1,6 +1,5 @@
 import torch.nn.functional as F
 
-
 def model_loss(disp_ests, disp_gt, mask):
     weights = [0.5, 0.5, 0.7, 1.0]
     all_losses = []

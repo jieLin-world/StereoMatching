@@ -1,8 +1,9 @@
 """The loss aggregator."""
 
 from . import losses
-from utils import Odict
-from utils import is_dict, get_attr_from, get_valid_args, is_tensor, get_ddp_module, get_msg_mgr
+from utils.common import Odict
+from utils.common import is_dict, get_attr_from, get_valid_args, is_tensor, get_ddp_module
+from utils.msg_manager import get_msg_mgr
 
 
 class LossAggregator():

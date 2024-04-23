@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -x
-DATAPATH="/home/xyguo/data/kitti_2015/"
+DATAPATH="/mnt/cephfs/dataset/stereo_matching/kitti2015/"
 python main.py --dataset kitti \
     --datapath $DATAPATH --trainlist ./filenames/kitti15_train.txt --testlist ./filenames/kitti15_val.txt \
     --epochs 300 --lrepochs "200:10" \

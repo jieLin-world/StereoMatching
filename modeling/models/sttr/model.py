@@ -2,7 +2,7 @@ import torch
 import torch.optim as optim
 
 from modeling.base_model import BaseModel
-from utils import get_valid_args, get_attr_from
+from utils.common import get_valid_args, get_attr_from
 from .utilities.loss import build_criterion
 from .sttr import STTR
 from .utilities import Map

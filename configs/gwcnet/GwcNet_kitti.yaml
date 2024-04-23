@@ -1,17 +1,17 @@
 data_cfg:
-#  name: KITTI2015
-#  root: data/kitti15
-#  train_list: datasets/KITTI15/kitti15_train200.txt
-#  val_list: datasets/KITTI15/kitti15_train200.txt
-#  test_list: datasets/KITTI15/kitti15_test.txt
-  name: KITTI2012
-  root: data/kitti12
-  train_list: datasets/KITTI12/kitti12_train194.txt
-  val_list: datasets/KITTI12/kitti12_train194.txt
-  test_list: datasets/KITTI12/kitti12_test.txt
+  name: KITTI2015
+  root: /mnt/cephfs/dataset/stereo_matching/kitti2015
+  train_list: filenames/KITTI15/kitti15_train200.txt
+  val_list: filenames/KITTI15/kitti15_train200.txt
+  test_list: filenames/KITTI15/kitti15_test.txt
+#  name: KITTI2012
+#  root: data/kitti12
+#  train_list: filenames/KITTI12/kitti12_train194.txt
+#  val_list: filenames/KITTI12/kitti12_train194.txt
+#  test_list: filenames/KITTI12/kitti12_test.txt
 
-  num_workers: 4
-  train_batch_size: 4
+  num_workers: 16
+  train_batch_size: 2
   val_batch_size: 1
   pin_memory: true
   shuffle: true

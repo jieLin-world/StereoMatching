@@ -5,7 +5,7 @@ import torch.nn as nn
 from base_trainer import BaseTrainer
 from modeling.common.modules  import *
 from modeling.base_model import BaseModel
-from utils import get_attr_from,get_valid_args
+from utils.common import get_attr_from,get_valid_args
 from modeling.common.lamb import Lamb
 
 class FADNet(BaseModel):

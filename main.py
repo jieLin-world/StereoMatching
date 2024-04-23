@@ -6,9 +6,11 @@ import torch.distributed as dist
 import torch.multiprocessing as mp
 
 from modeling import models
-from utils import config_loader, init_seeds, get_msg_mgr
+from utils.common import config_loader, init_seeds
+from utils.msg_manager import get_msg_mgr
 from utils.common import DDPPassthrough, params_count
 
+#os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3,4,5,6"
 
 def arg_parse():
     parser = argparse.ArgumentParser(description='Main program for OpenStereo.')
@@ -17,7 +19,7 @@ def arg_parse():
     parser.add_argument('--scope', default='train', choices=['train', 'val', 'test_kitti'],
                         help="choose train or test scope")
     parser.add_argument('--master_addr', type=str, default='localhost', help="master address")
-    parser.add_argument('--master_port', type=str, default='22', help="master port")
+    parser.add_argument('--master_port', type=str, default='12355', help="master port")
     parser.add_argument('--no_distribute', action='store_true', default=False, help="disable distributed training")
     parser.add_argument('--log_to_file', action='store_true',
                         help="log to file, default path is: output/<dataset>/<model>/<save_name>/<logs>/<Datetime>.txt")

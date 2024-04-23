@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 
 from modeling.base_model import BaseModel
-from utils import Odict
+from utils.common import Odict
 from types import SimpleNamespace
 
 from .igev_stereo import IGEVStereo

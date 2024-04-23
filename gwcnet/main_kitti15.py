@@ -18,26 +18,26 @@ from models import __models__, model_loss
 from utils import *
 from torch.utils.data import DataLoader
 import gc
-
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3,4,5,6,7"
 cudnn.benchmark = True
 
 parser = argparse.ArgumentParser(description='Group-wise Correlation Stereo Network (GwcNet)')
 parser.add_argument('--model', default='gwcnet-g', help='select a model structure', choices=__models__.keys())
 parser.add_argument('--maxdisp', type=int, default=192, help='maximum disparity')
 
-parser.add_argument('--dataset', required=True, help='dataset name', choices=__datasets__.keys())
-parser.add_argument('--datapath', required=True, help='data path')
-parser.add_argument('--trainlist', required=True, help='training list')
-parser.add_argument('--testlist', required=True, help='testing list')
+parser.add_argument('--dataset',  default='kitti', help='kitti/sceneflow', choices=__datasets__.keys())
+parser.add_argument('--datapath',  default='/mnt/cephfs/dataset/stereo_matching/kitti2015/', help='data path')
+parser.add_argument('--trainlist',  default='/mnt/cephfs/home/zhihongyan/linjie/stereo/gwcnet/filenames/kitti15_train.txt', help='training list')
+parser.add_argument('--testlist',  default='/mnt/cephfs/home/zhihongyan/linjie/stereo/gwcnet/filenames/kitti15_val.txt', help='testing list')
 
 parser.add_argument('--lr', type=float, default=0.001, help='base learning rate')
 parser.add_argument('--batch_size', type=int, default=16, help='training batch size')
-parser.add_argument('--test_batch_size', type=int, default=8, help='testing batch size')
-parser.add_argument('--epochs', type=int, required=True, help='number of epochs to train')
-parser.add_argument('--lrepochs', type=str, required=True, help='the epochs to decay lr: the downscale rate')
+parser.add_argument('--test_batch_size', type=int, default=1, help='testing batch size')
+parser.add_argument('--epochs', type=int,  default=300, help='number of epochs to train')
+parser.add_argument('--lrepochs', type=str,  default="200:10", help='the epochs to decay lr: the downscale rate')
 
-parser.add_argument('--logdir', required=True, help='the directory to save logs and checkpoints')
-parser.add_argument('--loadckpt', help='load the weights from a specific checkpoint')
+parser.add_argument('--logdir',  default='/mnt/cephfs/home/zhihongyan/linjie/stereo/gwcnet/checkpoints/kitti15/gwcnet-g', help='the directory to save logs and checkpoints')
+parser.add_argument('--loadckpt', default='/mnt/cephfs/home/zhihongyan/linjie/stereo/gwcnet/checkpoints/scenceflow/gwcnet-g/pretrained.ckpt', help='load the weights from a specific checkpoint')
 parser.add_argument('--resume', action='store_true', help='continue training the model')
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
 

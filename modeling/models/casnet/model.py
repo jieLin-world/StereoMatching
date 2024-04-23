@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 
 from modeling.base_model import BaseModel
-from utils import Odict
+from utils.common import Odict
 from .cas_gwc import GwcNet as CasGwcNet
 from .cas_psm import PSMNet as CasPSMNet
 

@@ -4,8 +4,8 @@ from ctypes import ArgumentError
 import torch
 import torch.nn as nn
 
-from utils import Odict, is_tensor
-from utils import ddp_all_gather
+from utils.common import Odict, is_tensor
+from utils.common import ddp_all_gather
 
 
 def gather_and_scale_wrapper(func):
