@@ -14,6 +14,9 @@ import numpy as np
 import time
 from tensorboardX import SummaryWriter
 from datasets import __datasets__
+from gwcnet.utils.experiment import AverageMeterDict, adjust_learning_rate, make_nograd_func, save_images, save_scalars, tensor2float
+from gwcnet.utils.metrics import D1_metric, EPE_metric, Thres_metric
+from gwcnet.utils.visualization import disp_error_image_func
 from models import __models__, model_loss
 from utils import *
 from torch.utils.data import DataLoader
@@ -33,10 +36,10 @@ parser.add_argument('--testlist',  default='/mnt/cephfs/home/zhihongyan/linjie/s
 parser.add_argument('--lr', type=float, default=0.001, help='base learning rate')
 parser.add_argument('--batch_size', type=int, default=16, help='training batch size')
 parser.add_argument('--test_batch_size', type=int, default=1, help='testing batch size')
-parser.add_argument('--epochs', type=int,  default=16, help='number of epochs to train')
+parser.add_argument('--epochs', type=int,  default=3, help='number of epochs to train')
 parser.add_argument('--lrepochs', type=str,  default="10,12,14,16:2", help='the epochs to decay lr: the downscale rate')
 
-parser.add_argument('--logdir',  default='/mnt/cephfs/home/zhihongyan/linjie/stereo/gwcnet/checkpoints/sceneflow/gwcnet-gc', help='the directory to save logs and checkpoints')
+parser.add_argument('--logdir',  default='/mnt/cephfs/home/zhihongyan/linjie/output/gwcnet/checkpoints/sceneflow/gwcnet-gc', help='the directory to save logs and checkpoints')
 parser.add_argument('--loadckpt', help='load the weights from a specific checkpoint')
 parser.add_argument('--resume', action='store_true', help='continue training the model')
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
@@ -153,7 +156,7 @@ def train_sample(sample, compute_metrics=False):
     image_outputs = {"disp_est": disp_ests, "disp_gt": disp_gt, "imgL": imgL, "imgR": imgR}
     if compute_metrics:
         with torch.no_grad():
-            image_outputs["errormap"] = [disp_error_image_func()(disp_est, disp_gt) for disp_est in disp_ests]
+            image_outputs["errormap"] = [disp_error_image_func().apply(disp_est, disp_gt) for disp_est in disp_ests]
             scalar_outputs["EPE"] = [EPE_metric(disp_est, disp_gt, mask) for disp_est in disp_ests]
             scalar_outputs["D1"] = [D1_metric(disp_est, disp_gt, mask) for disp_est in disp_ests]
             scalar_outputs["Thres1"] = [Thres_metric(disp_est, disp_gt, mask, 1.0) for disp_est in disp_ests]
