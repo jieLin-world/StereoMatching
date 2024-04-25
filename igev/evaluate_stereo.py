@@ -11,9 +11,9 @@ import logging
 import numpy as np
 import torch
 from tqdm import tqdm
-from igev_stereo import IGEVStereo, autocast
-import stereo_datasets as datasets
-from utils.utils import InputPadder
+from igev.core.igev_stereo import IGEVStereo, autocast
+from igev.core import stereo_datasets as datasets
+from igev.core.utils.utils import InputPadder
 from PIL import Image
 
 def count_parameters(model):

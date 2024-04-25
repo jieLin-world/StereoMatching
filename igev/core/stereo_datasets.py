@@ -123,27 +123,35 @@ class StereoDataset(data.Dataset):
 
 
 class SceneFlowDatasets(StereoDataset):
-    def __init__(self, aug_params=None, root='/data/sceneflow/', dstype='frames_finalpass', things_test=False):
+    def __init__(self, aug_params=None, root='/mnt/cephfs/dataset/stereo_matching/sceneflow/', dstype='frames_finalpass', things_test=False):
         super(SceneFlowDatasets, self).__init__(aug_params)
         self.root = root
         self.dstype = dstype
 
         if things_test:
-            self._add_things("TEST")
+            self.sceneflow_data("TEST")
         else:
-            self._add_things("TRAIN")
-            self._add_monkaa("TRAIN")
-            self._add_driving("TRAIN")
+            self.sceneflow_data("TRAIN")
 
-    def _add_things(self, split='TRAIN'):
+    def sceneflow_data(self, split='TRAIN'):
         """ Add FlyingThings3D data """
 
         original_length = len(self.disparity_list)
         # root = osp.join(self.root, 'FlyingThings3D')
         root = self.root
-        left_images = sorted( glob(osp.join(root, self.dstype, split, '*/*/left/*.png')) )
-        right_images = [ im.replace('left', 'right') for im in left_images ]
-        disparity_images = [ im.replace(self.dstype, 'disparity').replace('.png', '.pfm') for im in left_images ]
+        left_images_things = sorted( glob(osp.join(root, self.dstype, split, '*/*/left/*.png')) )
+        right_images_things = [ im.replace('left', 'right') for im in left_images_things ]
+        disparity_images_things = [ im.replace(self.dstype, 'disparity').replace('.png', '.pfm') for im in left_images_things ]
+        left_images_monkaa = sorted( glob(osp.join(root, self.dstype, split, '*/left/*.png')) )
+        right_images_monkaa = [ im.replace('left', 'right') for im in left_images_monkaa ]
+        disparity_images_monkaa = [ im.replace(self.dstype, 'disparity').replace('.png', '.pfm') for im in left_images_monkaa ]
+        left_images_driving = sorted( glob(osp.join(root, self.dstype, split, '*/*/*/left/*.png')) )
+        right_images_driving = [ im.replace('left', 'right') for im in left_images_driving ]
+        disparity_images_driving = [ im.replace(self.dstype, 'disparity').replace('.png', '.pfm') for im in left_images_driving ]
+
+        left_images = left_images_things + left_images_monkaa + left_images_driving
+        right_images = right_images_things + right_images_monkaa + right_images_driving
+        disparity_images = disparity_images_things + disparity_images_monkaa + disparity_images_driving
 
         # Choose a random subset of 400 images for validation
         state = np.random.get_state()
@@ -156,37 +164,7 @@ class SceneFlowDatasets(StereoDataset):
             if (split == 'TEST' and idx in val_idxs) or split == 'TRAIN':
                 self.image_list += [ [img1, img2] ]
                 self.disparity_list += [ disp ]
-        logging.info(f"Added {len(self.disparity_list) - original_length} from FlyingThings {self.dstype}")
-
-    def _add_monkaa(self, split="TRAIN"):
-        """ Add FlyingThings3D data """
-
-        original_length = len(self.disparity_list)
-        root = self.root
-        left_images = sorted( glob(osp.join(root, self.dstype, split, '*/left/*.png')) )
-        right_images = [ image_file.replace('left', 'right') for image_file in left_images ]
-        disparity_images = [ im.replace(self.dstype, 'disparity').replace('.png', '.pfm') for im in left_images ]
-
-        for img1, img2, disp in zip(left_images, right_images, disparity_images):
-            self.image_list += [ [img1, img2] ]
-            self.disparity_list += [ disp ]
-        logging.info(f"Added {len(self.disparity_list) - original_length} from Monkaa {self.dstype}")
-
-
-    def _add_driving(self, split="TRAIN"):
-        """ Add FlyingThings3D data """
-
-        original_length = len(self.disparity_list)
-        root = self.root
-        left_images = sorted( glob(osp.join(root, self.dstype, split, '*/*/*/left/*.png')) )
-        right_images = [ image_file.replace('left', 'right') for image_file in left_images ]
-        disparity_images = [ im.replace(self.dstype, 'disparity').replace('.png', '.pfm') for im in left_images ]
-
-        for img1, img2, disp in zip(left_images, right_images, disparity_images):
-            self.image_list += [ [img1, img2] ]
-            self.disparity_list += [ disp ]
-        logging.info(f"Added {len(self.disparity_list) - original_length} from Driving {self.dstype}")
-
+        logging.info(f"Added {len(self.disparity_list) - original_length} from sceneflow {self.dstype}")
 
 class ETH3D(StereoDataset):
     def __init__(self, aug_params=None, root='/data/ETH3D', split='training'):

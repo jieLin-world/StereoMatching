@@ -1,6 +1,6 @@
 from __future__ import print_function, division
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '0, 1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3,4,5,6,7'
 import argparse
 import logging
 import numpy as np
@@ -42,7 +42,7 @@ def sequence_loss(disp_preds, disp_init_pred, disp_gt, valid, loss_gamma=0.9, ma
     assert not torch.isinf(disp_gt[valid.bool()]).any()
 
 
-    disp_loss += 1.0 * F.smooth_l1_loss(disp_init_pred[valid.bool()], disp_gt[valid.bool()], size_average=True)
+    disp_loss += 1.0 * F.smooth_l1_loss(disp_init_pred[valid.bool()], disp_gt[valid.bool()], reduction='mean')
     for i in range(n_predictions):
         adjusted_loss_gamma = loss_gamma**(15/(n_predictions - 1))
         i_weight = adjusted_loss_gamma**(n_predictions - i - 1)
@@ -163,6 +163,7 @@ def train(args):
 
             scaler.step(optimizer)
             scheduler.step()
+            
             scaler.update()
             logger.push(metrics)
 
@@ -204,10 +205,10 @@ if __name__ == '__main__':
     parser.add_argument('--name', default='igev-stereo', help="name your experiment")
     parser.add_argument('--restore_ckpt', default=None, help="load the weights from a specific checkpoint")
     parser.add_argument('--mixed_precision', default=True, action='store_true', help='use mixed precision')
-    parser.add_argument('--logdir', default='./checkpoints/sceneflow', help='the directory to save logs and checkpoints')
+    parser.add_argument('--logdir', default='/mnt/cephfs/dataset/stereo_matching/output/igev/checkpoints/sceneflow', help='the directory to save logs and checkpoints')
 
     # Training parameters
-    parser.add_argument('--batch_size', type=int, default=8, help="batch size used during training.")
+    parser.add_argument('--batch_size', type=int, default=16, help="batch size used during training.")
     parser.add_argument('--train_datasets', nargs='+', default=['sceneflow'], help="training datasets.")
     parser.add_argument('--lr', type=float, default=0.0002, help="max learning rate.")
     parser.add_argument('--num_steps', type=int, default=200000, help="length of training schedule.")

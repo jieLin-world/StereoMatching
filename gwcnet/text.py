@@ -1,6 +1,6 @@
 import numpy as np
 import re 
-file = open('/mnt/cephfs/dataset/stereo_matching/sceneflow/disparity/TRAIN/C/0457/left/0014.pfm', 'rb')
+file = open('/mnt/cephfs/dataset/stereo_matching/sceneflow/disparity/TRAIN/A/0693/left/0009.pfm', 'rb')
 header = file.readline().decode('utf-8').rstrip()
 if header == 'PF':
     color = True
@@ -25,8 +25,8 @@ else:
 data = np.fromfile(file, endian + 'f')
 shape = (height, width, 3) if color else (height, width)
 
-data_reshape = np.reshape(data, shape)
-data_flipud = np.flipud(data_reshape)
+#data_reshape = np.reshape(data, shape)
+#data_flipud = np.flipud(data_reshape)
 
 print(file)
 print(header)
@@ -34,6 +34,6 @@ print(dim_match)
 print(width, height)
 print(scale)
 print(data)
-print(data_reshape)
-print(data_flipud)
-print(data)
+#print(data_reshape)
+#rint(data_flipud)
+print(data.__len__())

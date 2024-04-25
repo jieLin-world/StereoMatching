@@ -34,12 +34,12 @@ parser.add_argument('--trainlist',  default='/mnt/cephfs/home/zhihongyan/linjie/
 parser.add_argument('--testlist',  default='/mnt/cephfs/home/zhihongyan/linjie/stereo/gwcnet/filenames/sceneflow_test.txt', help='testing list')
 
 parser.add_argument('--lr', type=float, default=0.001, help='base learning rate')
-parser.add_argument('--batch_size', type=int, default=16, help='training batch size')
+parser.add_argument('--batch_size', type=int, default=24, help='training batch size')
 parser.add_argument('--test_batch_size', type=int, default=1, help='testing batch size')
-parser.add_argument('--epochs', type=int,  default=3, help='number of epochs to train')
+parser.add_argument('--epochs', type=int,  default=16, help='number of epochs to train')
 parser.add_argument('--lrepochs', type=str,  default="10,12,14,16:2", help='the epochs to decay lr: the downscale rate')
 
-parser.add_argument('--logdir',  default='/mnt/cephfs/home/zhihongyan/linjie/output/gwcnet/checkpoints/sceneflow/gwcnet-gc', help='the directory to save logs and checkpoints')
+parser.add_argument('--logdir',  default='/mnt/cephfs/dataset/stereo_matching/output/gwcnet/checkpoints/sceneflow/gwcnet-gc', help='the directory to save logs and checkpoints')
 parser.add_argument('--loadckpt', help='load the weights from a specific checkpoint')
 parser.add_argument('--resume', action='store_true', help='continue training the model')
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
@@ -192,7 +192,7 @@ def test_sample(sample, compute_metrics=True):
     scalar_outputs["Thres3"] = [Thres_metric(disp_est, disp_gt, mask, 3.0) for disp_est in disp_ests]
 
     if compute_metrics:
-        image_outputs["errormap"] = [disp_error_image_func()(disp_est, disp_gt) for disp_est in disp_ests]
+        image_outputs["errormap"] = [disp_error_image_func().apply(disp_est, disp_gt) for disp_est in disp_ests]
 
     return tensor2float(loss), tensor2float(scalar_outputs), image_outputs
 
