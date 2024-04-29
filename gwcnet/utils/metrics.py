@@ -62,4 +62,4 @@ def Thres_metric(D_est, D_gt, mask, thres):
 @compute_metric_for_each_image
 def EPE_metric(D_est, D_gt, mask):
     D_est, D_gt = D_est[mask], D_gt[mask]
-    return F.l1_loss(D_est, D_gt, size_average=True)
+    return F.l1_loss(D_est, D_gt, reduction='mean')

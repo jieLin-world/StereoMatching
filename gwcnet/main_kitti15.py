@@ -14,18 +14,21 @@ import numpy as np
 import time
 from tensorboardX import SummaryWriter
 from datasets import __datasets__
+from gwcnet.utils.experiment import AverageMeterDict, adjust_learning_rate, make_nograd_func, save_images, save_scalars, tensor2float
+from gwcnet.utils.metrics import D1_metric, EPE_metric, Thres_metric
+from gwcnet.utils.visualization import disp_error_image_func
 from models import __models__, model_loss
 from utils import *
 from torch.utils.data import DataLoader
 import gc
-os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3,4,5,6,7"
 cudnn.benchmark = True
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3,4,5,6,7"
 
 parser = argparse.ArgumentParser(description='Group-wise Correlation Stereo Network (GwcNet)')
-parser.add_argument('--model', default='gwcnet-g', help='select a model structure', choices=__models__.keys())
+parser.add_argument('--model', default='gwcnet-gc', help='select a model structure', choices=__models__.keys())
 parser.add_argument('--maxdisp', type=int, default=192, help='maximum disparity')
 
-parser.add_argument('--dataset',  default='kitti', help='kitti/sceneflow', choices=__datasets__.keys())
+parser.add_argument('--dataset',  default='kitti', help='kitti', choices=__datasets__.keys())
 parser.add_argument('--datapath',  default='/mnt/cephfs/dataset/stereo_matching/kitti2015/', help='data path')
 parser.add_argument('--trainlist',  default='/mnt/cephfs/home/zhihongyan/linjie/stereo/gwcnet/filenames/kitti15_train.txt', help='training list')
 parser.add_argument('--testlist',  default='/mnt/cephfs/home/zhihongyan/linjie/stereo/gwcnet/filenames/kitti15_val.txt', help='testing list')
@@ -33,11 +36,11 @@ parser.add_argument('--testlist',  default='/mnt/cephfs/home/zhihongyan/linjie/s
 parser.add_argument('--lr', type=float, default=0.001, help='base learning rate')
 parser.add_argument('--batch_size', type=int, default=16, help='training batch size')
 parser.add_argument('--test_batch_size', type=int, default=1, help='testing batch size')
-parser.add_argument('--epochs', type=int,  default=300, help='number of epochs to train')
+parser.add_argument('--epochs', type=int,  default=500, help='number of epochs to train')
 parser.add_argument('--lrepochs', type=str,  default="200:10", help='the epochs to decay lr: the downscale rate')
 
-parser.add_argument('--logdir',  default='/mnt/cephfs/home/zhihongyan/linjie/stereo/gwcnet/checkpoints/kitti15/gwcnet-g', help='the directory to save logs and checkpoints')
-parser.add_argument('--loadckpt', default='/mnt/cephfs/home/zhihongyan/linjie/stereo/gwcnet/checkpoints/scenceflow/gwcnet-g/pretrained.ckpt', help='load the weights from a specific checkpoint')
+parser.add_argument('--logdir',  default='/mnt/cephfs/dataset/stereo_matching/output/gwcnet/checkpoints/kitti15/gwcnet-g', help='the directory to save logs and checkpoints')
+parser.add_argument('--loadckpt', help='load the weights from a specific checkpoint')
 parser.add_argument('--resume', action='store_true', help='continue training the model')
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
 
@@ -65,6 +68,7 @@ TestImgLoader = DataLoader(test_dataset, args.test_batch_size, shuffle=False, nu
 model = __models__[args.model](args.maxdisp)
 model = nn.DataParallel(model)
 model.cuda()
+print('Number of model parameters:{}'.format(sum([p.data.nelement() for p in model.parameters()])))
 optimizer = optim.Adam(model.parameters(), lr=args.lr, betas=(0.9, 0.999))
 
 # load parameters
@@ -83,8 +87,13 @@ if args.resume:
 elif args.loadckpt:
     # load the checkpoint file specified by args.loadckpt
     print("loading model {}".format(args.loadckpt))
+    #state_dict = torch.load(args.loadckpt)
+    #model.load_state_dict(state_dict['model'])
     state_dict = torch.load(args.loadckpt)
-    model.load_state_dict(state_dict['model'])
+    model_dict = model.state_dict()
+    pre_dict = {k: v for k, v in state_dict['model'].items() if k in model_dict}
+    model_dict.update(pre_dict) 
+    model.load_state_dict(model_dict)
 print("start at epoch {}".format(start_epoch))
 
 
