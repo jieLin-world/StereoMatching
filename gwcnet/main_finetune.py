@@ -29,7 +29,7 @@ parser.add_argument('--model', default='gwcnet-gc', help='select a model structu
 parser.add_argument('--maxdisp', type=int, default=192, help='maximum disparity')
 
 parser.add_argument('--dataset',  default='kitti', help='kitti', choices=__datasets__.keys())
-parser.add_argument('--datapath',  default='/mnt/cephfs/dataset/stereo_matching/kitti2015/', help='data path')
+parser.add_argument('--datapath',  default='/mnt/cephfs/dataset/stereo_matching/kitti2015', help='data path')
 parser.add_argument('--trainlist',  default='/mnt/cephfs/home/zhihongyan/linjie/stereo/gwcnet/filenames/kitti15_train.txt', help='training list')
 parser.add_argument('--testlist',  default='/mnt/cephfs/home/zhihongyan/linjie/stereo/gwcnet/filenames/kitti15_val.txt', help='testing list')
 
@@ -40,7 +40,6 @@ parser.add_argument('--epochs', type=int,  default=300, help='number of epochs t
 parser.add_argument('--lrepochs', type=str,  default="200:10", help='the epochs to decay lr: the downscale rate')
 
 parser.add_argument('--logdir',  default='/mnt/cephfs/dataset/stereo_matching/output/gwcnet/checkpoints/kitti15/gwcnet-g', help='the directory to save logs and checkpoints')
-
 parser.add_argument('--loadckpt', default='/mnt/cephfs/dataset/stereo_matching/output/gwcnet/checkpoints/scenceflow/gwcnet-g/pretrained.ckpt', help='load the weights from a specific checkpoint')
 parser.add_argument('--resume', action='store_true', help='continue training the model')
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')

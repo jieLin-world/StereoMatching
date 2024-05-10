@@ -123,7 +123,7 @@ class StereoDataset(data.Dataset):
 
 
 class SceneFlowDatasets(StereoDataset):
-    def __init__(self, aug_params=None, root='/mnt/cephfs/dataset/stereo_matching/sceneflow/', dstype='frames_finalpass', things_test=False):
+    def __init__(self, aug_params=None, root='/mnt/cephfs/dataset/stereo_matching/sceneflow', dstype='frames_finalpass', things_test=False):
         super(SceneFlowDatasets, self).__init__(aug_params)
         self.root = root
         self.dstype = dstype

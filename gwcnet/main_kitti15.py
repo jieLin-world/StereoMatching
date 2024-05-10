@@ -29,7 +29,7 @@ parser.add_argument('--model', default='gwcnet-gc', help='select a model structu
 parser.add_argument('--maxdisp', type=int, default=192, help='maximum disparity')
 
 parser.add_argument('--dataset',  default='kitti', help='kitti', choices=__datasets__.keys())
-parser.add_argument('--datapath',  default='/mnt/cephfs/dataset/stereo_matching/kitti2015/', help='data path')
+parser.add_argument('--datapath',  default='/mnt/cephfs/dataset/stereo_matching/kitti2015', help='data path')
 parser.add_argument('--trainlist',  default='/mnt/cephfs/home/zhihongyan/linjie/stereo/gwcnet/filenames/kitti15_train.txt', help='training list')
 parser.add_argument('--testlist',  default='/mnt/cephfs/home/zhihongyan/linjie/stereo/gwcnet/filenames/kitti15_val.txt', help='testing list')
 
@@ -39,7 +39,7 @@ parser.add_argument('--test_batch_size', type=int, default=1, help='testing batc
 parser.add_argument('--epochs', type=int,  default=500, help='number of epochs to train')
 parser.add_argument('--lrepochs', type=str,  default="200:10", help='the epochs to decay lr: the downscale rate')
 
-parser.add_argument('--logdir',  default='/mnt/cephfs/dataset/stereo_matching/output/gwcnet/checkpoints/kitti15/gwcnet-g', help='the directory to save logs and checkpoints')
+parser.add_argument('--logdir',  default='/mnt/cephfs/dataset/stereo_matching/output/gwcnet/checkpoints/kitti15/gwcnet-gc', help='the directory to save logs and checkpoints')
 parser.add_argument('--loadckpt', help='load the weights from a specific checkpoint')
 parser.add_argument('--resume', action='store_true', help='continue training the model')
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
@@ -162,7 +162,7 @@ def train_sample(sample, compute_metrics=False):
     image_outputs = {"disp_est": disp_ests, "disp_gt": disp_gt, "imgL": imgL, "imgR": imgR}
     if compute_metrics:
         with torch.no_grad():
-            image_outputs["errormap"] = [disp_error_image_func()(disp_est, disp_gt) for disp_est in disp_ests]
+            image_outputs["errormap"] = [disp_error_image_func().apply(disp_est, disp_gt) for disp_est in disp_ests]
             scalar_outputs["EPE"] = [EPE_metric(disp_est, disp_gt, mask) for disp_est in disp_ests]
             scalar_outputs["D1"] = [D1_metric(disp_est, disp_gt, mask) for disp_est in disp_ests]
             scalar_outputs["Thres1"] = [Thres_metric(disp_est, disp_gt, mask, 1.0) for disp_est in disp_ests]
@@ -198,7 +198,7 @@ def test_sample(sample, compute_metrics=True):
     scalar_outputs["Thres3"] = [Thres_metric(disp_est, disp_gt, mask, 3.0) for disp_est in disp_ests]
 
     if compute_metrics:
-        image_outputs["errormap"] = [disp_error_image_func()(disp_est, disp_gt) for disp_est in disp_ests]
+        image_outputs["errormap"] = [disp_error_image_func().apply(disp_est, disp_gt) for disp_est in disp_ests]
 
     return tensor2float(loss), tensor2float(scalar_outputs), image_outputs
 

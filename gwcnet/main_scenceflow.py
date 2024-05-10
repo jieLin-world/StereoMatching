@@ -29,7 +29,7 @@ parser.add_argument('--model', default='gwcnet-gc', help='select a model structu
 parser.add_argument('--maxdisp', type=int, default=192, help='maximum disparity')
 
 parser.add_argument('--dataset',  default='sceneflow', help='sceneflow', choices=__datasets__.keys())
-parser.add_argument('--datapath',  default='/mnt/cephfs/dataset/stereo_matching/sceneflow/', help='data path')
+parser.add_argument('--datapath',  default='/mnt/cephfs/dataset/stereo_matching/sceneflow', help='data path')
 parser.add_argument('--trainlist',  default='/mnt/cephfs/home/zhihongyan/linjie/stereo/gwcnet/filenames/sceneflow_train.txt', help='training list')
 parser.add_argument('--testlist',  default='/mnt/cephfs/home/zhihongyan/linjie/stereo/gwcnet/filenames/sceneflow_test.txt', help='testing list')
 
