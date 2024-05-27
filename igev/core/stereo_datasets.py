@@ -51,7 +51,7 @@ class StereoDataset(data.Dataset):
             return img1, img2, self.extra_info[index]
 
         if not self.init_seed:
-            worker_info = torch.utils.data.get_worker_info()
+            worker_info = data.get_worker_info()
             if worker_info is not None:
                 torch.manual_seed(worker_info.id)
                 np.random.seed(worker_info.id)
@@ -123,19 +123,17 @@ class StereoDataset(data.Dataset):
 
 
 class SceneFlowDatasets(StereoDataset):
-    def __init__(self, aug_params=None, root='/mnt/cephfs/dataset/stereo_matching/sceneflow', dstype='frames_finalpass', things_test=False):
+    def __init__(self, aug_params=None, root='/mnt/cephfs/dataset/stereo_matching/sceneflow', dstype='frames_finalpass', is_test=False):
         super(SceneFlowDatasets, self).__init__(aug_params)
         self.root = root
         self.dstype = dstype
 
-        if things_test:
+        if is_test:
             self.sceneflow_data("TEST")
         else:
             self.sceneflow_data("TRAIN")
 
     def sceneflow_data(self, split='TRAIN'):
-        """ Add FlyingThings3D data """
-
         original_length = len(self.disparity_list)
         # root = osp.join(self.root, 'FlyingThings3D')
         root = self.root
@@ -226,7 +224,7 @@ class TartanAir(StereoDataset):
             self.disparity_list += [ disp ]
 
 class KITTI(StereoDataset):
-    def __init__(self, aug_params=None, root='/data/KITTI/KITTI_2015', image_set='training'):
+    def __init__(self, aug_params=None, root='/mnt/cephfs/dataset/stereo_matching/kitti2015', image_set='training'):
         super(KITTI, self).__init__(aug_params, sparse=True, reader=frame_utils.readDispKITTI)
         assert os.path.exists(root)
 
@@ -246,11 +244,11 @@ class KITTI(StereoDataset):
 
 
 class Middlebury(StereoDataset):
-    def __init__(self, aug_params=None, root='/data/Middlebury', split='F'):
+    def __init__(self, aug_params=None, root='/mnt/cephfs/dataset/stereo_matching/middlebury', split='F'):
         super(Middlebury, self).__init__(aug_params, sparse=True, reader=frame_utils.readDispMiddlebury)
         assert os.path.exists(root)
         assert split in "FHQ"
-        lines = list(map(osp.basename, glob(os.path.join(root, "trainingH/*"))))
+        lines = list(map(osp.basename, glob(os.path.join(root, "trainingF/*"))))
         # lines = list(filter(lambda p: any(s in p.split('/') for s in Path(os.path.join(root, "MiddEval3/official_train.txt")).read_text().splitlines()), lines))
         # image1_list = sorted([os.path.join(root, "MiddEval3", f'training{split}', f'{name}/im0.png') for name in lines])
         # image2_list = sorted([os.path.join(root, "MiddEval3", f'training{split}', f'{name}/im1.png') for name in lines])
@@ -266,9 +264,10 @@ class Middlebury(StereoDataset):
 
   
 def fetch_dataloader(args):
-    """ Create the data loader for the corresponding trainign set """
+    """ Create the data loader for the corresponding training set """
 
-    aug_params = {'crop_size': args.image_size, 'min_scale': args.spatial_scale[0], 'max_scale': args.spatial_scale[1], 'do_flip': False, 'yjitter': not args.noyjitter}
+    aug_params = {'crop_size': args.image_size, 'min_scale': args.spatial_scale[0], 'max_scale': args.spatial_scale[1], 
+                  'do_flip': False, 'yjitter': not args.noyjitter}
     if hasattr(args, "saturation_range") and args.saturation_range is not None:
         aug_params["saturation_range"] = args.saturation_range
     if hasattr(args, "img_gamma") and args.img_gamma is not None:

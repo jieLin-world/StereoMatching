@@ -40,6 +40,27 @@ def build_concat_volume(refimg_fea, targetimg_fea, maxdisp):
     volume = volume.contiguous()
     return volume
 
+def build_left_3Dgeometry_volume(refimg_fea, maxdisp):
+    B, C, H, W = refimg_fea.shape
+    volume = refimg_fea.new_zeros([B, C, maxdisp, H, W])
+    for i in range(maxdisp):
+        if i > 0:
+            volume[:, :, i, :, i:] = refimg_fea[:, :, :, i:]
+        else:
+            volume[:, :, i, :, :] = refimg_fea
+    volume = volume.contiguous()
+    return volume
+
+def build_right_3Dgeometry_volume(targetimg_fea, maxdisp):
+    B, C, H, W = targetimg_fea.shape
+    volume = targetimg_fea.new_zeros([B, C, maxdisp, H, W])
+    for i in range(maxdisp):
+        if i > 0:            
+            volume[:, :, i, :, i:] = targetimg_fea[:, :, :, :-i]
+        else:            
+            volume[:, :, i, :, :] = targetimg_fea
+    volume = volume.contiguous()
+    return volume
 
 def groupwise_correlation(fea1, fea2, num_groups):
     B, C, H, W = fea1.shape
