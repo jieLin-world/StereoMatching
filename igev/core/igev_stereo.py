@@ -154,7 +154,7 @@ class IGEVStereo(nn.Module):
         image1 = (2 * (image1 / 255.0) - 1.0).contiguous()
         image2 = (2 * (image2 / 255.0) - 1.0).contiguous()
         with autocast(enabled=self.args.mixed_precision):
-            features_left = self.feature(image1)
+            features_left = self.feature(image1)  #mobilenetv2_100, Class Feature, return[x4, x8, x16, x32]
             features_right = self.feature(image2)
             stem_2x = self.stem_2(image1)
             stem_4x = self.stem_4(stem_2x)
