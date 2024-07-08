@@ -17,7 +17,7 @@ from evaluate_stereo import *
 import core.stereo_datasets as datasets
 
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '0, 1, 2, 3'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0, 1, 2, 3, 4 ,5, 6, 7'
 
 try:
     from torch.cuda.amp import GradScaler

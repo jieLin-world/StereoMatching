@@ -1,9 +1,0 @@
-scikit-image
-fire
-tensorboardX
-tqdm
-numpy
-numba
-easydict
-pyyaml
-opencv-python
