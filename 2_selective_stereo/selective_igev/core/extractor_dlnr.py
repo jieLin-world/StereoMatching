@@ -123,7 +123,7 @@ class FeedForward(nn.Module):
     def __init__(self, dim, ffn_expansion_factor, bias):
         super(FeedForward, self).__init__()
 
-        hidden_features = int(dim * ffn_expansion_factor)#64*2.66=170
+        hidden_features = int(dim * ffn_expansion_factor)
 
         self.project_in = nn.Conv2d(dim, hidden_features * 2, kernel_size=1, bias=bias)
 
@@ -302,46 +302,40 @@ class Channel_Attention_Transformer_Extractor(nn.Module):
 
         self.output = nn.Conv2d(int(dim * 2 ** 1), out_channels, kernel_size=3, stride=1, padding=1, bias=bias)
 
-    def forward(self, inp_img):#[2B, 3, W, H]
-        downsampled_img = self.pixelUnShuffle(inp_img)#[2B, 48, H/4, W/4], PixelUnShuffle(4)
+    def forward(self, inp_img):
+        downsampled_img = self.pixelUnShuffle(inp_img)
 
-        inp_enc_level1 = self.patch_embed(downsampled_img)#[2B, 64, H/4, W/4], Conv2d
+        inp_enc_level1 = self.patch_embed(downsampled_img)
 
-        out_enc_level1 = self.encoder_level1(inp_enc_level1)#[2B, 64, H/4, W/4], TransformerBlock(head==1)*4, LayerNorm→Attention→LayerNorm→FeedForward 
+        out_enc_level1 = self.encoder_level1(inp_enc_level1)
 
-        inp_enc_level2 = self.down1_2(out_enc_level1)#[2B, 128, H/8, W/8], Conv2d, PixelUnShuffle(2)
-        out_enc_level2 = self.encoder_level2(inp_enc_level2)#[2B, 128, H/8, W/8], TransformerBlock(head==2)*6,
+        inp_enc_level2 = self.down1_2(out_enc_level1)
+        out_enc_level2 = self.encoder_level2(inp_enc_level2)
 
-        inp_enc_level3 = self.down2_3(out_enc_level2)#[2B, 256, H/16, W/16], Conv2d, PixelUnShuffle(2)
-        out_enc_level3 = self.encoder_level3(inp_enc_level3)#[2B, 256, H/16, W/16], TransformerBlock(head==4)*6,
+        inp_enc_level3 = self.down2_3(out_enc_level2)
+        out_enc_level3 = self.encoder_level3(inp_enc_level3)
 
-        inp_enc_level4 = self.down3_4(out_enc_level3)#[2B, 512, H/32, W/32], Conv2d, PixelUnShuffle(2)
+        inp_enc_level4 = self.down3_4(out_enc_level3)
 
-        latent = self.latent(inp_enc_level4)#[2B, 512, H/32, W/32], TransformerBlock(head==8)*8,
+        latent = self.latent(inp_enc_level4)
 
-        inp_dec_level3 = self.up4_3(latent)#[2B, 256, H/16, W/16], Conv2d, PixelShuffle(2)
-        inp_dec_level3 = torch.cat([inp_dec_level3, out_enc_level3], 1)#[2B, 256, H/16, W/16]+[2B, 256, H/16, W/16]=[2B, 512, H/16, W/16], torch.cat(dim=1)
-        inp_dec_level3 = self.reduce_chan_level3(inp_dec_level3)#[2B, 256, H/16, W/16], Conv2d(kernel_size=1)
-        inp_dec_level3_copy = inp_dec_level3[:(inp_dec_level3.shape[0] // 2)]#[B, 256, H/16, W/16]
-        outputs16 = [f(inp_dec_level3_copy) for f in self.outputs16]#[[B, 128, H/16, W/16], [B, 128, H/16, W/16]]
-        out_dec_level3 = self.decoder_level3(inp_dec_level3)#[2B, 256, H/16, W/16], TransformerBlock(head==4)*6,
+        inp_dec_level3 = self.up4_3(latent)
+        inp_dec_level3 = torch.cat([inp_dec_level3, out_enc_level3], 1)
+        inp_dec_level3 = self.reduce_chan_level3(inp_dec_level3)
+        inp_dec_level3_copy = inp_dec_level3[:(inp_dec_level3.shape[0] // 2)]
+        outputs16 = [f(inp_dec_level3_copy) for f in self.outputs16]
+        out_dec_level3 = self.decoder_level3(inp_dec_level3)
 
-        inp_dec_level2 = self.up3_2(out_dec_level3)#[2B, 128, H/8, W/8], Conv2d, PixelShuffle(2)
-        inp_dec_level2 = torch.cat([inp_dec_level2, out_enc_level2], 1)#[2B, 128, H/8, W/8]+[2B, 128, H/8, W/8]=[2B, 256, H/8, W/8], torch.cat(dim=1)
-        inp_dec_level2_copy = inp_dec_level2[:(inp_dec_level2.shape[0] // 2)]#[B, 256, H/8, W/8]
-        outputs08 = [f(inp_dec_level2_copy) for f in self.outputs08]#[[B, 128, H/8, W/8], [B, 128, H/8, W/8]]
-        inp_dec_level2 = self.reduce_chan_level2(inp_dec_level2)#[2B, 128, H/8, W/8], Conv2d(kernel_size=1)
-        out_dec_level2 = self.decoder_level2(inp_dec_level2)#[2B, 128, H/8, W/8], TransformerBlock(head==2)*6,
+        inp_dec_level2 = self.up3_2(out_dec_level3)
+        inp_dec_level2 = torch.cat([inp_dec_level2, out_enc_level2], 1)
+        inp_dec_level2_copy = inp_dec_level2[:(inp_dec_level2.shape[0] // 2)]
+        outputs08 = [f(inp_dec_level2_copy) for f in self.outputs08]
+        inp_dec_level2 = self.reduce_chan_level2(inp_dec_level2)
+        out_dec_level2 = self.decoder_level2(inp_dec_level2)
 
-        inp_dec_level1 = self.up2_1(out_dec_level2)#[2B, 64, H/4, W/4], Conv2d, PixelShuffle(2)
-        inp_dec_level1 = torch.cat([inp_dec_level1, out_enc_level1], 1)#[2B, 64, H/4, W/4]+[2B, 64, H/4, W/4]=[2B, 128, H/4, W/4], torch.cat(dim=1)
-        v = inp_dec_level1#[2B, 128, H/4, W/4]
-        inp_dec_level1_copy = inp_dec_level1[:(inp_dec_level1.shape[0] // 2)]#[B, 128, H/4, W/4]
-        outputs04 = [f(inp_dec_level1_copy) for f in self.outputs04]#[[B, 128, H/4, W/4][B, 128, H/4, W/4]], two Transformer block
+        inp_dec_level1 = self.up2_1(out_dec_level2)
+        inp_dec_level1 = torch.cat([inp_dec_level1, out_enc_level1], 1)
+        v = inp_dec_level1
+        inp_dec_level1_copy = inp_dec_level1[:(inp_dec_level1.shape[0] // 2)]
+        outputs04 = [f(inp_dec_level1_copy) for f in self.outputs04]
         return outputs04, outputs08, outputs16, v
-""" 
-[[B, 128, H/4, W/4], [B, 128, H/4, W/4]], 
-[[B, 128, H/8, W/8], [B, 128, H/8, W/8]], 
-[[B, 128, H/16, W/16], [B, 128, H/16, W/16]], 
-[2B, 128, H/4, W/4]
-"""

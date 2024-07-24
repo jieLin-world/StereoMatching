@@ -1,12 +1,13 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from core.update import BasicSelectiveMultiUpdateBlock, SpatialAttentionExtractor, ChannelAttentionEnhancement
-from core.extractor import MultiBasicEncoder
-from core.extractor_dlnr import Channel_Attention_Transformer_Extractor
+from core.update import BasicMultiUpdateBlock, LSTMMultiUpdateBlock
+from core.extractor import MultiBasicEncoder, Feature, SpatialInfEncoder
 from core.geometry import Combined_Geo_Encoding_Volume
 from core.submodule import *
-
+import time
+from nets.refinement import REMP
+from nets.MCCV import Mca_Camp
 
 try:
     autocast = torch.cuda.amp.autocast
@@ -56,13 +57,14 @@ class hourglass(nn.Module):
                                    BasicConv(in_channels*2, in_channels*2, is_3d=True, kernel_size=3, padding=1, stride=1),
                                    BasicConv(in_channels*2, in_channels*2, is_3d=True, kernel_size=3, padding=1, stride=1))
 
+        chans = [128, 192, 448, 384]
+        # chans = [48,64,192,160]
 
-
-        self.feature_att_8 = FeatureAtt(in_channels*2, 64)
-        self.feature_att_16 = FeatureAtt(in_channels*4, 192)
-        self.feature_att_32 = FeatureAtt(in_channels*6, 160)
-        self.feature_att_up_16 = FeatureAtt(in_channels*4, 192)
-        self.feature_att_up_8 = FeatureAtt(in_channels*2, 64)
+        self.feature_att_8 = FeatureAtt(in_channels * 2, chans[1])
+        self.feature_att_16 = FeatureAtt(in_channels * 4, chans[2])
+        self.feature_att_32 = FeatureAtt(in_channels * 6, chans[3])
+        self.feature_att_up_16 = FeatureAtt(in_channels * 4, chans[2])
+        self.feature_att_up_8 = FeatureAtt(in_channels * 2, chans[1])
 
     def forward(self, x, features):
         conv1 = self.conv1(x)
@@ -88,7 +90,7 @@ class hourglass(nn.Module):
 
         return conv
 
-class IGEVStereo(nn.Module):
+class Mocha(nn.Module):
     def __init__(self, args):
         super().__init__()
         self.args = args
@@ -96,41 +98,47 @@ class IGEVStereo(nn.Module):
         context_dims = args.hidden_dims
 
         self.cnet = MultiBasicEncoder(output_dim=[args.hidden_dims, context_dims], norm_fn="batch", downsample=args.n_downsample)
-        self.update_block = BasicSelectiveMultiUpdateBlock(self.args, hidden_dims=args.hidden_dims)
-        self.sam = SpatialAttentionExtractor()
-        self.cam = ChannelAttentionEnhancement(128)
+        self.update_block = LSTMMultiUpdateBlock(self.args, hidden_dims=args.hidden_dims)
 
-        self.feature = Channel_Attention_Transformer_Extractor()
+        self.context_zqr_convs = nn.ModuleList(
+            [nn.Conv2d(context_dims[i], args.hidden_dims[i] * 4, 3, padding=3 // 2) for i in
+             range(self.args.n_gru_layers)])
 
+        self.feature = Feature()
+        chans = [128, 192, 448, 384]
         self.stem_2 = nn.Sequential(
             BasicConv_IN(3, 32, kernel_size=3, stride=2, padding=1),
             nn.Conv2d(32, 32, 3, 1, 1, bias=False),
             nn.InstanceNorm2d(32), nn.ReLU()
             )
         self.stem_4 = nn.Sequential(
-            BasicConv_IN(32, 48, kernel_size=3, stride=2, padding=1),
-            nn.Conv2d(48, 48, 3, 1, 1, bias=False),
-            nn.InstanceNorm2d(48), nn.ReLU()
-            )
+            BasicConv_IN(32, chans[0], kernel_size=3, stride=2, padding=1),
+            nn.Conv2d(chans[0], chans[0], 3, 1, 1, bias=False),
+            nn.InstanceNorm2d(chans[0]), nn.ReLU()
+        )
 
-        self.spx = nn.Sequential(nn.ConvTranspose2d(2*32, 9, kernel_size=4, stride=2, padding=1),)
+        self.spx = nn.Sequential(nn.ConvTranspose2d(2 * 32, 9, kernel_size=4, stride=2, padding=1), )
         self.spx_2 = Conv2x_IN(24, 32, True)
         self.spx_4 = nn.Sequential(
-            BasicConv_IN(96, 24, kernel_size=3, stride=1, padding=1),
+            BasicConv_IN(chans[0] * 2, 24, kernel_size=3, stride=1, padding=1),
             nn.Conv2d(24, 24, 3, 1, 1, bias=False),
             nn.InstanceNorm2d(24), nn.ReLU()
-            )
+        )
 
         self.spx_2_gru = Conv2x(32, 32, True)
-        self.spx_gru = nn.Sequential(nn.ConvTranspose2d(2*32, 9, kernel_size=4, stride=2, padding=1),)
+        self.spx_gru = nn.Sequential(nn.ConvTranspose2d(2 * 32, 9, kernel_size=4, stride=2, padding=1), )
 
-        self.conv = BasicConv_IN(96, 96, kernel_size=3, padding=1, stride=1)
+        self.conv = BasicConv_IN(chans[0] * 2, 96, kernel_size=3, padding=1, stride=1)
         self.desc = nn.Conv2d(96, 96, kernel_size=1, padding=0, stride=1)
 
         self.corr_stem = BasicConv(8, 8, is_3d=True, kernel_size=3, stride=1, padding=1)
-        self.corr_feature_att = FeatureAtt(8, 96)
+        self.corr_feature_att = FeatureAtt(8, chans[0] * 2)
         self.cost_agg = hourglass(8)
         self.classifier = nn.Conv3d(8, 1, 3, 1, 1, bias=False)
+
+        self.mccv = Mca_Camp()
+
+        self.REMP = REMP()
 
     def freeze_bn(self):
         for m in self.modules():
@@ -165,16 +173,20 @@ class IGEVStereo(nn.Module):
 
             match_left = self.desc(self.conv(features_left[0]))
             match_right = self.desc(self.conv(features_right[0]))
-            gwc_volume = build_gwc_volume(match_left, match_right, self.args.max_disp//4, 8)
+            gwc_volume = build_gwc_volume(match_left, match_right, 192//4, 8)
             gwc_volume = self.corr_stem(gwc_volume)
+            # print('gwc1',gwc_volume.shape)
             gwc_volume = self.corr_feature_att(gwc_volume, features_left[0])
-            geo_encoding_volume = self.cost_agg(gwc_volume, features_left)
+            # print('gwc2',gwc_volume.shape)
+            Channel_Correlation_Volume = self.mccv(features_left)
+            Final_Correlation_Volume = self.cost_agg(gwc_volume, Channel_Correlation_Volume)
+            # del Channel_Correlation_Volume
 
             # Init disp from geometry encoding volume
-            prob = F.softmax(self.classifier(geo_encoding_volume).squeeze(1), dim=1)
+            prob = F.softmax(self.classifier(Final_Correlation_Volume).squeeze(1), dim=1)
             init_disp = disparity_regression(prob, self.args.max_disp//4)
             
-            del prob, gwc_volume
+            # del prob, gwc_volume
 
             if not test_mode:
                 xspx = self.spx_4(features_left[0])
@@ -185,28 +197,45 @@ class IGEVStereo(nn.Module):
             cnet_list = self.cnet(image1, num_layers=self.args.n_gru_layers)
             net_list = [torch.tanh(x[0]) for x in cnet_list]
             inp_list = [torch.relu(x[1]) for x in cnet_list]
-            inp_list = [self.cam(x) * x for x in inp_list]
-            att = [self.sam(x) for x in inp_list]
+            #inp_list = [list(conv(i).split(split_size=conv.out_channels//3, dim=1)) for i,conv in zip(inp_list, self.context_zqr_convs)]
+            inp_list = [list(conv(i).split(split_size=conv.out_channels//4, dim=1)) for i,conv in zip(inp_list, self.context_zqr_convs)]
+
 
         geo_block = Combined_Geo_Encoding_Volume
-        geo_fn = geo_block(match_left.float(), match_right.float(), geo_encoding_volume.float(), radius=self.args.corr_radius, num_levels=self.args.corr_levels)
+        geo_fn = geo_block(match_left.float(), match_right.float(), Final_Correlation_Volume.float(), radius=self.args.corr_radius, num_levels=self.args.corr_levels)
         b, c, h, w = match_left.shape
         coords = torch.arange(w).float().to(match_left.device).reshape(1,1,w,1).repeat(b, h, 1, 1)
         disp = init_disp
         disp_preds = []
 
-        # GRUs iterations to update disparity
+        # LSTM iterations to update disparity
+        cnt = 0
         for itr in range(iters):
             disp = disp.detach()
             geo_feat = geo_fn(disp, coords)
             with autocast(enabled=self.args.mixed_precision):
-                net_list, mask_feat_4, delta_disp = self.update_block(net_list, inp_list, geo_feat, disp, att)
+                if self.args.n_gru_layers == 3 and self.args.slow_fast_gru: # Update low-res ConvGRU
+                    net_list = self.update_block(net_list, inp_list, iter16=True, iter08=False, iter04=False, update=False)
+                if self.args.n_gru_layers >= 2 and self.args.slow_fast_gru:# Update low-res ConvGRU and mid-res ConvGRU
+                    net_list = self.update_block(net_list, inp_list, iter16=self.args.n_gru_layers==3, iter08=True, iter04=False, update=False)
+                if cnt == 0:
+                    netC = net_list
+                    cnt = 1
+                netC, net_list, mask_feat_4, delta_disp = self.update_block(netC, net_list, inp_list, geo_feat, disp,
+                                                                            iter16=self.args.n_gru_layers == 3,
+                                                                            iter08=self.args.n_gru_layers >= 2)
+
             disp = disp + delta_disp
             if test_mode and itr < iters-1:
                 continue
 
             # upsample predictions
             disp_up = self.upsample_disp(disp, mask_feat_4, stem_2x)
+            # Consistency Filter Refinement
+            if itr == iters - 1:
+                refine_value = self.REMP(disp_up, image1, image2)
+                disp_up = disp_up + refine_value
+
             disp_preds.append(disp_up)
 
         if test_mode:

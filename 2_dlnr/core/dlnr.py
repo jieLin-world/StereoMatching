@@ -29,6 +29,7 @@ class DLNR(nn.Module):
         self.extractor = Channel_Attention_Transformer_Extractor()  #
         self.update_block = LSTMMultiUpdateBlock(self.args, hidden_dims=args.hidden_dims)
 
+        #context_dims=[128] * 3, n_gru_layers=3 -->Cond2d(128, 128*4, 3, 1)*3
         self.bias_convs = nn.ModuleList(
             [nn.Conv2d(context_dims[i], args.hidden_dims[i] * 4, 3, padding=3 // 2) for i in
              range(self.args.n_gru_layers)])
@@ -71,18 +72,19 @@ class DLNR(nn.Module):
 
         with autocast(enabled=self.args.mixed_precision):
             *cnet_list, x = self.extractor(torch.cat((image1, image2), dim=0))
-            fmap1, fmap2 = self.volume_conv(x).split(dim=0, split_size=x.shape[0] // 2)
-            net_h = [torch.tanh(x[0]) for x in cnet_list]
-            net_ext = [torch.relu(x[1]) for x in cnet_list]
+            fmap1, fmap2 = self.volume_conv(x).split(dim=0, split_size=x.shape[0] // 2)#[B, 256, H/4, W/4],[B, 256, H/4, W/4], some conv2d, InstanceNorm2d and relu
+            net_h = [torch.tanh(x[0]) for x in cnet_list]#3*tensor of left image [B, 128, H/4, W/4], [B, 128, H/8, W/8], [B, 128, H/16, W/16]
+            net_ext = [torch.relu(x[1]) for x in cnet_list]#3*tensor of right image [B, 128, H/4, W/4], [B, 128, H/8, W/8], [B, 128, H/16, W/16]
 
             net_ext = [list(conv(i).split(split_size=conv.out_channels // 4, dim=1)) for i, conv in
-                       zip(net_ext, self.bias_convs)]
+                       zip(net_ext, self.bias_convs)]#[[B, 128, H/4, W/4]*4*3] -->Cond2d(128, 128*4, 3, 1)*3-->split(128)
 
         if self.args.corr_implementation == "reg":  # Default
             corr_block = CorrBlock1D
             fmap1, fmap2 = fmap1.float(), fmap2.float()
         elif self.args.corr_implementation == "reg_cuda":
             corr_block = CorrBlockFast1D
+        #radius=4,"width of the correlation pyramid", num_levels=4,"number of levels in the correlation pyramid
         corr_fn = corr_block(fmap1, fmap2, radius=self.args.corr_radius, num_levels=self.args.corr_levels)
 
         coords0, coords1 = self.initialize_flow(net_h[0])

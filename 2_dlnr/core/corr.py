@@ -28,8 +28,9 @@ class CorrBlockFast1D:
         self.corr_pyramid = []
         # all pairs correlation
         corr = CorrBlockFast1D.corr(fmap1, fmap2)
+        #[B, H/4, W/4, 1, W/4]
         batch, h1, w1, dim, w2 = corr.shape
-        corr = corr.reshape(batch*h1*w1, dim, 1, w2)
+        corr = corr.reshape(batch*h1*w1, dim, 1, w2)#[B*H/4*W/4, 1, 1, W/4]
         for i in range(self.num_levels):
             self.corr_pyramid.append(corr.view(batch, h1, w1, -1, w2//2**i))
             corr = F.avg_pool2d(corr, [1,2], stride=[1,2])
@@ -49,7 +50,7 @@ class CorrBlockFast1D:
         _, _, _, W2 = fmap2.shape
         fmap1 = fmap1.view(B, D, H, W1)
         fmap2 = fmap2.view(B, D, H, W2)
-        corr = torch.einsum('aijk,aijh->ajkh', fmap1, fmap2)
+        corr = torch.einsum('aijk,aijh->ajkh', fmap1, fmap2)#Einstein summation
         corr = corr.reshape(B, H, W1, 1, W2).contiguous()
         return corr / torch.sqrt(torch.tensor(D).float())
 
