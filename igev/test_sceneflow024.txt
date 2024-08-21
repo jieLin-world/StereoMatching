@@ -1,0 +1,12 @@
+Validation Scene Flow: EPE 0.919128, D1 4.712737
+Validation Scene Flow: EPE 0.772096, D1 3.769833
+Validation Scene Flow: EPE 0.699122, D1 3.491770
+Validation Scene Flow: EPE 0.661722, D1 3.415123
+Validation Scene Flow: EPE 0.633574, D1 3.205613
+Validation Scene Flow: EPE 0.587021, D1 3.017664
+Validation Scene Flow: EPE 0.591384, D1 3.023454
+Validation Scene Flow: EPE 0.548906, D1 2.839385
+Validation Scene Flow: EPE 0.552391, D1 2.872765
+Validation Scene Flow: EPE 0.536871, D1 2.792177
+Validation Scene Flow: EPE 0.547684, D1 2.771359
+Validation Scene Flow: EPE 0.540742, D1 2.766160

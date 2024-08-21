@@ -46,7 +46,7 @@ class DLNR(nn.Module):
                 m.eval()
 
     def initialize_flow(self, img):
-        N, _, H, W = img.shape
+        N, _, H, W = img.shape#[B, 128, H/4, W/4]
 
         coords0 = coords_grid(N, H, W).to(img.device)
         coords1 = coords_grid(N, H, W).to(img.device)
@@ -73,9 +73,9 @@ class DLNR(nn.Module):
         with autocast(enabled=self.args.mixed_precision):
             *cnet_list, x = self.extractor(torch.cat((image1, image2), dim=0))
             fmap1, fmap2 = self.volume_conv(x).split(dim=0, split_size=x.shape[0] // 2)#[B, 256, H/4, W/4],[B, 256, H/4, W/4], some conv2d, InstanceNorm2d and relu
+            
             net_h = [torch.tanh(x[0]) for x in cnet_list]#3*tensor of left image [B, 128, H/4, W/4], [B, 128, H/8, W/8], [B, 128, H/16, W/16]
             net_ext = [torch.relu(x[1]) for x in cnet_list]#3*tensor of right image [B, 128, H/4, W/4], [B, 128, H/8, W/8], [B, 128, H/16, W/16]
-
             net_ext = [list(conv(i).split(split_size=conv.out_channels // 4, dim=1)) for i, conv in
                        zip(net_ext, self.bias_convs)]#[[B, 128, H/4, W/4]*4*3] -->Cond2d(128, 128*4, 3, 1)*3-->split(128)
 
@@ -87,13 +87,14 @@ class DLNR(nn.Module):
         #radius=4,"width of the correlation pyramid", num_levels=4,"number of levels in the correlation pyramid
         corr_fn = corr_block(fmap1, fmap2, radius=self.args.corr_radius, num_levels=self.args.corr_levels)
 
-        coords0, coords1 = self.initialize_flow(net_h[0])
+        coords0, coords1 = self.initialize_flow(net_h[0])#[B, 2, H/4, W/4], use [B, H/4, W/4] to get the coordinate indx,-->use torch.meshgrid
 
         if flow_init is not None:
             coords1 = coords1 + flow_init
 
         flow_predictions = []
         cnt = 0
+        
         for itr in range(iters):
             coords1 = coords1.detach()
             corr = corr_fn(coords1)  #

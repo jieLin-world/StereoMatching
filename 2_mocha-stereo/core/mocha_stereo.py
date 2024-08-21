@@ -164,15 +164,18 @@ class Mocha(nn.Module):
         with autocast(enabled=self.args.mixed_precision):
             features_left = self.feature(image1)
             features_right = self.feature(image2)
+            
             stem_2x = self.stem_2(image1)
             stem_4x = self.stem_4(stem_2x)
             stem_2y = self.stem_2(image2)
             stem_4y = self.stem_4(stem_2y)
+            
             features_left[0] = torch.cat((features_left[0], stem_4x), 1)
             features_right[0] = torch.cat((features_right[0], stem_4y), 1)
 
             match_left = self.desc(self.conv(features_left[0]))
             match_right = self.desc(self.conv(features_right[0]))
+            
             gwc_volume = build_gwc_volume(match_left, match_right, 192//4, 8)
             gwc_volume = self.corr_stem(gwc_volume)
             # print('gwc1',gwc_volume.shape)

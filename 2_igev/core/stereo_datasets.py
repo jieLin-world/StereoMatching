@@ -51,7 +51,7 @@ class StereoDataset(data.Dataset):
             return img1, img2, self.extra_info[index]
 
         if not self.init_seed:
-            worker_info = data.get_worker_info()
+            worker_info = torch.utils.data.get_worker_info()
             if worker_info is not None:
                 torch.manual_seed(worker_info.id)
                 np.random.seed(worker_info.id)
@@ -123,33 +123,27 @@ class StereoDataset(data.Dataset):
 
 
 class SceneFlowDatasets(StereoDataset):
-    def __init__(self, aug_params=None, root='/mnt/cephfs/dataset/stereo_matching/sceneflow', dstype='frames_finalpass', is_test=False):
+    def __init__(self, aug_params=None, root='/data/sceneflow/', dstype='frames_finalpass', things_test=False):
         super(SceneFlowDatasets, self).__init__(aug_params)
         self.root = root
         self.dstype = dstype
 
-        if is_test:
-            self.sceneflow_data("TEST")
+        if things_test:
+            self._add_things("TEST")
         else:
-            self.sceneflow_data("TRAIN")
+            self._add_things("TRAIN")
+            self._add_monkaa("TRAIN")
+            self._add_driving("TRAIN")
 
-    def sceneflow_data(self, split='TRAIN'):
+    def _add_things(self, split='TRAIN'):
+        """ Add FlyingThings3D data """
+
         original_length = len(self.disparity_list)
         # root = osp.join(self.root, 'FlyingThings3D')
         root = self.root
-        left_images_things = sorted( glob(osp.join(root, self.dstype, split, '*/*/left/*.png')) )
-        right_images_things = [ im.replace('left', 'right') for im in left_images_things ]
-        disparity_images_things = [ im.replace(self.dstype, 'disparity').replace('.png', '.pfm') for im in left_images_things ]
-        left_images_monkaa = sorted( glob(osp.join(root, self.dstype, split, '*/left/*.png')) )
-        right_images_monkaa = [ im.replace('left', 'right') for im in left_images_monkaa ]
-        disparity_images_monkaa = [ im.replace(self.dstype, 'disparity').replace('.png', '.pfm') for im in left_images_monkaa ]
-        left_images_driving = sorted( glob(osp.join(root, self.dstype, split, '*/*/*/left/*.png')) )
-        right_images_driving = [ im.replace('left', 'right') for im in left_images_driving ]
-        disparity_images_driving = [ im.replace(self.dstype, 'disparity').replace('.png', '.pfm') for im in left_images_driving ]
-
-        left_images = left_images_things + left_images_monkaa + left_images_driving
-        right_images = right_images_things + right_images_monkaa + right_images_driving
-        disparity_images = disparity_images_things + disparity_images_monkaa + disparity_images_driving
+        left_images = sorted( glob(osp.join(root, self.dstype, split, '*/*/left/*.png')) )
+        right_images = [ im.replace('left', 'right') for im in left_images ]
+        disparity_images = [ im.replace(self.dstype, 'disparity').replace('.png', '.pfm') for im in left_images ]
 
         # Choose a random subset of 400 images for validation
         state = np.random.get_state()
@@ -162,7 +156,37 @@ class SceneFlowDatasets(StereoDataset):
             if (split == 'TEST' and idx in val_idxs) or split == 'TRAIN':
                 self.image_list += [ [img1, img2] ]
                 self.disparity_list += [ disp ]
-        logging.info(f"Added {len(self.disparity_list) - original_length} from sceneflow {self.dstype}")
+        logging.info(f"Added {len(self.disparity_list) - original_length} from FlyingThings {self.dstype}")
+
+    def _add_monkaa(self, split="TRAIN"):
+        """ Add FlyingThings3D data """
+
+        original_length = len(self.disparity_list)
+        root = self.root
+        left_images = sorted( glob(osp.join(root, self.dstype, split, '*/left/*.png')) )
+        right_images = [ image_file.replace('left', 'right') for image_file in left_images ]
+        disparity_images = [ im.replace(self.dstype, 'disparity').replace('.png', '.pfm') for im in left_images ]
+
+        for img1, img2, disp in zip(left_images, right_images, disparity_images):
+            self.image_list += [ [img1, img2] ]
+            self.disparity_list += [ disp ]
+        logging.info(f"Added {len(self.disparity_list) - original_length} from Monkaa {self.dstype}")
+
+
+    def _add_driving(self, split="TRAIN"):
+        """ Add FlyingThings3D data """
+
+        original_length = len(self.disparity_list)
+        root = self.root
+        left_images = sorted( glob(osp.join(root, self.dstype, split, '*/*/*/left/*.png')) )
+        right_images = [ image_file.replace('left', 'right') for image_file in left_images ]
+        disparity_images = [ im.replace(self.dstype, 'disparity').replace('.png', '.pfm') for im in left_images ]
+
+        for img1, img2, disp in zip(left_images, right_images, disparity_images):
+            self.image_list += [ [img1, img2] ]
+            self.disparity_list += [ disp ]
+        logging.info(f"Added {len(self.disparity_list) - original_length} from Driving {self.dstype}")
+
 
 class ETH3D(StereoDataset):
     def __init__(self, aug_params=None, root='/data/ETH3D', split='training'):
@@ -224,7 +248,7 @@ class TartanAir(StereoDataset):
             self.disparity_list += [ disp ]
 
 class KITTI(StereoDataset):
-    def __init__(self, aug_params=None, root='/mnt/cephfs/dataset/stereo_matching/kitti2015', image_set='training'):
+    def __init__(self, aug_params=None, root='/data/KITTI/KITTI_2015', image_set='training'):
         super(KITTI, self).__init__(aug_params, sparse=True, reader=frame_utils.readDispKITTI)
         assert os.path.exists(root)
 
@@ -244,11 +268,11 @@ class KITTI(StereoDataset):
 
 
 class Middlebury(StereoDataset):
-    def __init__(self, aug_params=None, root='/mnt/cephfs/dataset/stereo_matching/middlebury', split='F'):
+    def __init__(self, aug_params=None, root='/data/Middlebury', split='F'):
         super(Middlebury, self).__init__(aug_params, sparse=True, reader=frame_utils.readDispMiddlebury)
         assert os.path.exists(root)
         assert split in "FHQ"
-        lines = list(map(osp.basename, glob(os.path.join(root, "trainingF/*"))))
+        lines = list(map(osp.basename, glob(os.path.join(root, "trainingH/*"))))
         # lines = list(filter(lambda p: any(s in p.split('/') for s in Path(os.path.join(root, "MiddEval3/official_train.txt")).read_text().splitlines()), lines))
         # image1_list = sorted([os.path.join(root, "MiddEval3", f'training{split}', f'{name}/im0.png') for name in lines])
         # image2_list = sorted([os.path.join(root, "MiddEval3", f'training{split}', f'{name}/im1.png') for name in lines])
@@ -264,10 +288,9 @@ class Middlebury(StereoDataset):
 
   
 def fetch_dataloader(args):
-    """ Create the data loader for the corresponding training set """
+    """ Create the data loader for the corresponding trainign set """
 
-    aug_params = {'crop_size': args.image_size, 'min_scale': args.spatial_scale[0], 'max_scale': args.spatial_scale[1], 
-                  'do_flip': False, 'yjitter': not args.noyjitter}
+    aug_params = {'crop_size': args.image_size, 'min_scale': args.spatial_scale[0], 'max_scale': args.spatial_scale[1], 'do_flip': False, 'yjitter': not args.noyjitter}
     if hasattr(args, "saturation_range") and args.saturation_range is not None:
         aug_params["saturation_range"] = args.saturation_range
     if hasattr(args, "img_gamma") and args.img_gamma is not None:

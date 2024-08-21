@@ -81,6 +81,7 @@ class RAFTStereo(nn.Module):
             else:
                 cnet_list = self.cnet(image1, num_layers=self.args.n_gru_layers)
                 fmap1, fmap2 = self.fnet([image1, image2])
+                
             net_list = [torch.tanh(x[0]) for x in cnet_list]
             inp_list = [torch.relu(x[1]) for x in cnet_list]
 

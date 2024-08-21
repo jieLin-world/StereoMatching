@@ -35,10 +35,10 @@ class CorrBlockFast1D:
             self.corr_pyramid.append(corr.view(batch, h1, w1, -1, w2//2**i))
             corr = F.avg_pool2d(corr, [1,2], stride=[1,2])
 
-    def __call__(self, coords):
+    def __call__(self, coords):#coords[B, 2, H/4, W/4]
         out_pyramid = []
         bz, _, ht, wd = coords.shape
-        coords = coords[:, [0]]
+        coords = coords[:, [0]]#[B, 1, H/4, W/4]
         for i in range(self.num_levels):
             corr = CorrSampler.apply(self.corr_pyramid[i].squeeze(3), coords/2**i, self.radius)
             out_pyramid.append(corr.view(bz, -1, ht, wd))

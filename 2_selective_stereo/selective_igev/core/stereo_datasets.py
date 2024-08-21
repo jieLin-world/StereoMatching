@@ -224,16 +224,16 @@ class TartanAir(StereoDataset):
             self.disparity_list += [ disp ]
 
 class KITTI(StereoDataset):
-    def __init__(self, aug_params=None, root='/mnt/cephfs/dataset/stereo_matching/kitti2015', image_set='training'):
+    def __init__(self, aug_params=None, root='/mnt/cephfs/dataset/stereo_matching', image_set='training'):
         super(KITTI, self).__init__(aug_params, sparse=True, reader=frame_utils.readDispKITTI)
         assert os.path.exists(root)
 
-        root_12 = '/data/KITTI/KITTI_2012'
+        root_12 = '/mnt/cephfs/dataset/stereo_matching/kitti2012'
         image1_list = sorted(glob(os.path.join(root_12, image_set, 'colored_0/*_10.png')))
         image2_list = sorted(glob(os.path.join(root_12, image_set, 'colored_1/*_10.png')))
         disp_list = sorted(glob(os.path.join(root_12, 'training', 'disp_occ/*_10.png'))) if image_set == 'training' else [osp.join(root, 'training/disp_occ/000085_10.png')]*len(image1_list)
 
-        root_15 = '/data/KITTI/KITTI_2015'
+        root_15 = '/mnt/cephfs/dataset/stereo_matching/kitti2015'
         image1_list += sorted(glob(os.path.join(root_15, image_set, 'image_2/*_10.png')))
         image2_list += sorted(glob(os.path.join(root_15, image_set, 'image_3/*_10.png')))
         disp_list += sorted(glob(os.path.join(root_15, 'training', 'disp_occ_0/*_10.png'))) if image_set == 'training' else [osp.join(root, 'training/disp_occ_0/000085_10.png')]*len(image1_list)
